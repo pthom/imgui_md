@@ -91,6 +91,9 @@ protected:
 	virtual void SPAN_LATEXMATH_DISPLAY(bool);
 	virtual void SPAN_WIKILINK(const MD_SPAN_WIKILINK_DETAIL*, bool);
 	virtual void SPAN_U(bool);
+	virtual void SPAN_SUPERSCRIPT(bool);
+	virtual void SPAN_SUBSCRIPT(bool);
+	virtual void SPAN_MARK(bool);
 
 	////////////////////////////////////////////////////////////////////////////
 

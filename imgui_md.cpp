@@ -613,6 +613,21 @@ void imgui_md::SPAN_DEL(bool e)
 	m_is_strikethrough = e;
 }
 
+void imgui_md::SPAN_SUPERSCRIPT(bool e)
+{
+	m_is_sup = e;
+}
+
+void imgui_md::SPAN_SUBSCRIPT(bool e)
+{
+	m_is_sub = e;
+}
+
+void imgui_md::SPAN_MARK(bool e)
+{
+	m_is_mark = e;
+}
+
 void imgui_md::render_text(const char* str, const char* str_end)
 {
 	const ImGuiStyle& s = ImGui::GetStyle();
@@ -1427,6 +1442,15 @@ int imgui_md::span(MD_SPANTYPE type, void* d, bool e)
 		break;
 	case MD_SPAN_U:
 		SPAN_U(e);
+		break;
+	case MD_SPAN_SUPERSCRIPT:
+		SPAN_SUPERSCRIPT(e);
+		break;
+	case MD_SPAN_SUBSCRIPT:
+		SPAN_SUBSCRIPT(e);
+		break;
+	case MD_SPAN_MARK:
+		SPAN_MARK(e);
 		break;
 	default:
 		assert(false);
