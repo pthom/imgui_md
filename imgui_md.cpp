@@ -111,15 +111,12 @@ void imgui_md::BLOCK_LI(const MD_BLOCK_LI_DETAIL* d, bool e)
 			ImGui::Text("%d%c", nfo.cur_ol++, nfo.delim);
 			ImGui::SameLine();
 		} else {
-			if (nfo.delim == '*') {
-				float cx = ImGui::GetCursorPosX();
-				cx -= ImGui::GetStyle().FramePadding.x * 2;
-				ImGui::SetCursorPosX(cx);
-				ImGui::Bullet();
-			} else {
-				ImGui::Text("%c", nfo.delim);
-				ImGui::SameLine();
-			}
+			// CommonMark's -/*/+ bullets are interchangeable, not meaningful markers to preserve visually -
+			// render every unordered item with the same dot regardless of which one the source file used.
+			float cx = ImGui::GetCursorPosX();
+			cx -= ImGui::GetStyle().FramePadding.x * 2;
+			ImGui::SetCursorPosX(cx);
+			ImGui::Bullet();
 		}
 
 		ImGui::Indent();
