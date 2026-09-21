@@ -117,6 +117,11 @@ protected:
     // By default, code blocks are rendered as text with the code font, but you can override this
     virtual void render_code_block();
 
+    // Code blocks may be rendered inside a child window (see the overrides of render_code_block).
+    // Return false where child windows cannot be used (e.g. inside the canvas of a node editor):
+    // code blocks are then rendered as inline code.
+    virtual bool can_use_child_windows() const { return true; }
+
     // Draw a non-interactive checkbox glyph for a task-list item bullet.
     // Called from BLOCK_LI when MD_BLOCK_LI_DETAIL::is_task is non-zero.
     virtual void render_task_marker(bool checked);

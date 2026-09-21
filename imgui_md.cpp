@@ -314,11 +314,9 @@ void imgui_md::render_admonition_header(AdmonitionKind kind)
 }
 
 
-bool Priv_ImGuiNodeEditor_IsInCanvas();  // Forward declaration (hidden API of imgui.cpp, specific to ImGui Bundle)
-
 void imgui_md::BLOCK_CODE(const MD_BLOCK_CODE_DETAIL* detail, bool e)
 {
-    if (Priv_ImGuiNodeEditor_IsInCanvas())
+    if (!can_use_child_windows())
         m_is_code = e;
     else
     {
