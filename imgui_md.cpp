@@ -495,6 +495,24 @@ void imgui_md::line(ImColor c, bool under)
 	ImGui::GetWindowDrawList()->AddLine(mi, ma, c, lineThickness);
 }
 
+bool imgui_md::link_item(const Style& style, const char* url)
+{
+	const ImGuiStyle& s = ImGui::GetStyle();
+	ImVec4 underline;
+	bool clicked = false;
+	if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
+		ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+		if (style.linkTooltip)
+			ImGui::SetTooltip("%s", url);
+		underline = resolve_color(style.linkUnderlineHovered, s.Colors[ImGuiCol_ButtonHovered]);
+		clicked = ImGui::IsMouseClicked(0);
+	} else {
+		underline = resolve_color(style.linkUnderline, s.Colors[ImGuiCol_Button]);
+	}
+	line(underline, true);
+	return clicked;
+}
+
 void imgui_md::SPAN_A(const MD_SPAN_A_DETAIL* d, bool e)
 {
 	set_href(e, d->href);
@@ -729,22 +747,8 @@ void imgui_md::render_text(const char* str, const char* str_end)
 		}
 
 		if (!m_href.empty()) {
-
-			ImVec4 c;
-			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
-
-				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-				if (style.linkTooltip)
-					ImGui::SetTooltip("%s", m_href.c_str());
-
-				c = resolve_color(style.linkUnderlineHovered, s.Colors[ImGuiCol_ButtonHovered]);
-				if (ImGui::IsMouseClicked(0)) {
-					open_url();
-				}
-			} else {
-				c = resolve_color(style.linkUnderline, s.Colors[ImGuiCol_Button]);
-			}
-			line(c, true);
+			if (link_item(style, m_href.c_str()))
+				open_url();
 		}
 		if (m_is_underline) {
 			line(s.Colors[ImGuiCol_Text], true);

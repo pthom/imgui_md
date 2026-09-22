@@ -83,6 +83,9 @@ struct imgui_md
 	static ImVec4 default_link_color();
 	// Resolved colors (automatic ones derived from the ImGui style)
 	ImVec4 link_color() const;
+	// Decorates the last item as a link (underline, hand cursor, tooltip with the url when
+	// style.linkTooltip): returns true when it was clicked. Draw the text with link_color() first.
+	static bool link_item(const Style& style, const char* url);
 	ImVec4 admonition_color(AdmonitionKind kind) const;
 
 	//for example, these flags can be changed in div callback
