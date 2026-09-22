@@ -31,9 +31,15 @@
 // Small vertical gap between markdown blocks.
 // Unlike ImGui::NewLine() which adds a full FontSize (widget-oriented),
 // this adds a fraction of FontSize for tighter text layout.
-static void add_block_gap()
+static void add_block_gap(float gap_em)
 {
-	ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * 0.3f));
+	ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * gap_em));
+}
+
+// A color of the style, or its automatic value
+static ImVec4 resolve_color(const ImVec4& color, const ImVec4& automatic)
+{
+	return (color.w < 0.0f) ? automatic : color;
 }
 
 
@@ -99,7 +105,7 @@ void imgui_md::BLOCK_LI(const MD_BLOCK_LI_DETAIL* d, bool e)
 		m_list_stack.back().first_item_pending = false;
 		bool is_top_level = (m_list_stack.size() == 1);
 		if (!(is_first && is_top_level))
-			add_block_gap();
+			add_block_gap(style.blockGap);
 
 		list_info& nfo = m_list_stack.back();
 		if (d && d->is_task) {
@@ -181,7 +187,7 @@ void imgui_md::BLOCK_H(const MD_BLOCK_H_DETAIL* d, bool e)
 	if (!e) {
 		if (d->level <= 2) {
 			// Small gap between heading text and the underline separator.
-			add_block_gap();
+			add_block_gap(style.blockGap);
 			ImGui::Separator();
 		}
 	}
@@ -192,18 +198,12 @@ void imgui_md::BLOCK_DOC(bool)
 
 }
 
-// GitHub admonition palette tuned for dark themes. The same colors are
-// used both for the "NOTE" label and for the quote's left bar.
-static ImVec4 admonition_color(imgui_md::AdmonitionKind k)
+// The same color is used for the admonition label and for the quote's left bar
+ImVec4 imgui_md::admonition_color(AdmonitionKind kind) const
 {
-	switch (k) {
-	case imgui_md::AdmonitionKind::Note:      return ImVec4(0.35f, 0.65f, 1.00f, 1.0f);
-	case imgui_md::AdmonitionKind::Tip:       return ImVec4(0.25f, 0.73f, 0.32f, 1.0f);
-	case imgui_md::AdmonitionKind::Important: return ImVec4(0.82f, 0.60f, 0.97f, 1.0f);
-	case imgui_md::AdmonitionKind::Warning:   return ImVec4(0.95f, 0.75f, 0.22f, 1.0f);
-	case imgui_md::AdmonitionKind::Caution:   return ImVec4(0.97f, 0.32f, 0.29f, 1.0f);
-	default: return ImGui::GetStyle().Colors[ImGuiCol_TextDisabled];
-	}
+	if (kind == AdmonitionKind::None)
+		return ImGui::GetStyle().Colors[ImGuiCol_TextDisabled];
+	return style.admonitionColors[(int)kind - 1];
 }
 
 static const char* admonition_label(imgui_md::AdmonitionKind k)
@@ -246,10 +246,11 @@ void imgui_md::BLOCK_QUOTE(bool e)
 			// line height to cover that last line.
 			float end_y = ImGui::GetCursorScreenPos().y + ImGui::GetTextLineHeight();
 			float bar_x = indented_x - ImGui::GetStyle().IndentSpacing * 0.5f;
-			float thickness = (m_admonition_kind != AdmonitionKind::None) ? 3.0f : 2.0f;
-			ImColor bar_color = (m_admonition_kind != AdmonitionKind::None)
+			bool is_admonition = (m_admonition_kind != AdmonitionKind::None);
+			float thickness = is_admonition ? style.admonitionBarThickness : style.quoteBarThickness;
+			ImColor bar_color = is_admonition
 				? ImColor(admonition_color(m_admonition_kind))
-				: ImColor(ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+				: ImColor(resolve_color(style.quoteBar, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]));
 			ImGui::GetWindowDrawList()->AddLine(
 				ImVec2(bar_x, start_y), ImVec2(bar_x, end_y),
 				bar_color, thickness);
@@ -623,7 +624,7 @@ void imgui_md::render_text(const char* str, const char* str_end)
 	float sub_sup_y_offset = 0.0f;
 	if (m_is_sub || m_is_sup) {
 		auto f = get_font();
-		float small = f.size * 0.7f;
+		float small = f.size * style.subSupScale;
 		ImGui::PushFont(f.font, small);
 		pushed_small_font = true;
 		sub_sup_y_offset = m_is_sup ? 0.0f : (base_font_size - small);
@@ -701,7 +702,7 @@ void imgui_md::render_text(const char* str, const char* str_end)
 			ImVec2 mi = ImGui::GetItemRectMin();
 			ImVec2 ma = ImGui::GetItemRectMax();
 			mi.x -= 2.0f; ma.x += 2.0f;
-			dl->AddRectFilled(mi, ma, IM_COL32(245, 205, 60, 120), 2.0f);
+			dl->AddRectFilled(mi, ma, ImGui::GetColorU32(style.markBackground), 2.0f);
 			dl->ChannelsMerge();
 		}
 		// <kbd>: draw a thin rounded border around the glyph run.
@@ -709,7 +710,7 @@ void imgui_md::render_text(const char* str, const char* str_end)
 			ImVec2 mi = ImGui::GetItemRectMin();
 			ImVec2 ma = ImGui::GetItemRectMax();
 			mi.x -= 3.0f; ma.x += 3.0f;
-			ImU32 border = ImGui::GetColorU32(ImGuiCol_Border);
+			ImU32 border = ImGui::GetColorU32(resolve_color(style.kbdBorder, s.Colors[ImGuiCol_Border]));
 #if IMGUI_VERSION_NUM < 19276
 			dl->AddRect(mi, ma, border, 3.0f, 0, 1.0f);
 #else
@@ -733,14 +734,15 @@ void imgui_md::render_text(const char* str, const char* str_end)
 			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal)) {
 
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-				ImGui::SetTooltip("%s", m_href.c_str());
+				if (style.linkTooltip)
+					ImGui::SetTooltip("%s", m_href.c_str());
 
-				c = s.Colors[ImGuiCol_ButtonHovered];
+				c = resolve_color(style.linkUnderlineHovered, s.Colors[ImGuiCol_ButtonHovered]);
 				if (ImGui::IsMouseClicked(0)) {
 					open_url();
 				}
 			} else {
-				c = s.Colors[ImGuiCol_Button];
+				c = resolve_color(style.linkUnderline, s.Colors[ImGuiCol_Button]);
 			}
 			line(c, true);
 		}
@@ -1164,10 +1166,10 @@ void imgui_md::push_code_style()
 	auto code_font = get_font();
 	ImGui::PushFont(code_font.font, code_font.size);
 
-    // Make code a little more blue
-    auto color = ImGui::GetStyle().Colors[ImGuiCol_Text];
-    color.z *= 1.15f;
-    ImGui::PushStyleColor(ImGuiCol_Text, color);
+    // Automatic: the text color, a little more blue
+    auto automatic = ImGui::GetStyle().Colors[ImGuiCol_Text];
+    automatic.z *= 1.15f;
+    ImGui::PushStyleColor(ImGuiCol_Text, resolve_color(style.codeColor, automatic));
 
 }
 void imgui_md::pop_code_style()
@@ -1314,14 +1316,14 @@ int imgui_md::block(MD_BLOCKTYPE type, void* d, bool e)
 			if (m_skip_next_block_gap)
 				m_skip_next_block_gap = false;
 			else {
-				add_block_gap();
+				add_block_gap(style.blockGap);
 				// Extra breathing room above headers, decaying with depth:
 				// H1 gets the most, H6 none. Light scheme: 0.15 em per step.
 				if (type == MD_BLOCK_H) {
 					int level = ((MD_BLOCK_H_DETAIL*)d)->level;
 					int steps = 7 - level;
 					if (steps > 0)
-						ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * 0.12f * (float)steps));
+						ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * style.headerGapStep * (float)steps));
 				}
 			}
 		}
@@ -1478,7 +1480,7 @@ imgui_md::MdSizedFont imgui_md::get_font() const
 
 };
 
-ImVec4 LinkColor()
+ImVec4 imgui_md::default_link_color()
 {
     auto col_text = ImGui::GetStyle().Colors[ImGuiCol_Text];
 
@@ -1497,11 +1499,16 @@ ImVec4 LinkColor()
 }
 
 
+ImVec4 imgui_md::link_color() const
+{
+	return resolve_color(style.linkColor, default_link_color());
+}
+
 ImVec4 imgui_md::get_color() const
 {
 	if (!m_href.empty())
     {
-		return LinkColor();
+		return link_color();
 	}
 	return  ImGui::GetStyle().Colors[ImGuiCol_Text];
 }

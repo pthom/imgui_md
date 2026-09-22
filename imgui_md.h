@@ -55,6 +55,36 @@ struct imgui_md
 	// MD_FLAG_STRIKETHROUGH, MD_FLAG_TASKLISTS.
 	void set_flag(unsigned flag, bool enable);
 
+	// Colors and spacing. A color with a negative alpha is automatic: derived from the ImGui style
+	// at render time, so theme changes are followed. Gaps and scales are relative to the font size.
+	struct Style
+	{
+		ImVec4 linkColor = ImVec4(0, 0, 0, -1);            // automatic: the text color shifted to blue
+		ImVec4 linkUnderline = ImVec4(0, 0, 0, -1);        // automatic: ImGuiCol_Button
+		ImVec4 linkUnderlineHovered = ImVec4(0, 0, 0, -1); // automatic: ImGuiCol_ButtonHovered
+		ImVec4 codeColor = ImVec4(0, 0, 0, -1);            // automatic: the text color, a little more blue
+		ImVec4 quoteBar = ImVec4(0, 0, 0, -1);             // automatic: ImGuiCol_TextDisabled
+		ImVec4 kbdBorder = ImVec4(0, 0, 0, -1);            // automatic: ImGuiCol_Border
+		ImVec4 markBackground = ImVec4(245.f / 255.f, 205.f / 255.f, 60.f / 255.f, 120.f / 255.f);
+		// Note, Tip, Important, Warning, Caution (label and bar)
+		ImVec4 admonitionColors[5] = {
+			ImVec4(0.35f, 0.65f, 1.00f, 1.0f), ImVec4(0.25f, 0.73f, 0.32f, 1.0f), ImVec4(0.82f, 0.60f, 0.97f, 1.0f),
+			ImVec4(0.95f, 0.75f, 0.22f, 1.0f), ImVec4(0.97f, 0.32f, 0.29f, 1.0f) };
+		float blockGap = 0.3f;              // vertical gap between blocks
+		float headerGapStep = 0.12f;        // extra gap above a header: (7 - level) * headerGapStep
+		float subSupScale = 0.7f;           // font size of <sub> and <sup>
+		float quoteBarThickness = 2.0f;     // pixels
+		float admonitionBarThickness = 3.0f;
+		bool linkTooltip = true;            // show the url when hovering a link
+	};
+	Style style;
+
+	// The automatic link color: the text color, shifted to blue
+	static ImVec4 default_link_color();
+	// Resolved colors (automatic ones derived from the ImGui style)
+	ImVec4 link_color() const;
+	ImVec4 admonition_color(AdmonitionKind kind) const;
+
 	//for example, these flags can be changed in div callback
 
 	//draw border
