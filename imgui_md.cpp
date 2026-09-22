@@ -26,6 +26,7 @@
 #include "imgui_md.h"
 
 #include <cassert>
+#include <cmath>
 
 
 // Small vertical gap between markdown blocks.
@@ -690,6 +691,7 @@ void imgui_md::SPAN_WIKILINK(const MD_SPAN_WIKILINK_DETAIL* d, bool e)
 	// Rendered as a link whose href is the target; the click goes to open_wikilink()
 	m_is_wikilink = e;
 	set_href(e, d->target);
+	set_color(e);
 }
 
 void imgui_md::open_wikilink() const
@@ -952,6 +954,8 @@ static int extract_html_int_attr(const std::string& tag, const char* name, int d
 	catch (...) { return defaultValue; }
 }
 
+static bool details_hidden(const std::vector<bool>& stack);  // defined below
+
 bool imgui_md::check_html(const char* str, const char* str_end)
 {
 	const size_t sz = str_end - str;
@@ -1205,6 +1209,8 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 	}
 
 	if (strncmp(str, "<center>", sz) == 0) {
+		if (details_hidden(m_details_open_stack))
+			return true;
 		if (!m_in_center) {
 			m_in_center = true;
 			begin_aligned_cell(MD_ALIGN_CENTER, m_center_vtx_start, m_center_width);
@@ -1212,6 +1218,8 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 		return true;
 	}
 	if (strncmp(str, "</center>", sz) == 0) {
+		if (details_hidden(m_details_open_stack))
+			return true;
 		if (m_in_center) {
 			m_in_center = false;
 			end_aligned_cell(MD_ALIGN_CENTER, m_center_vtx_start, m_center_width);
@@ -1656,11 +1664,11 @@ void imgui_md::draw_loading_spinner()
 	{
 		float a = (float)i / (float)segments * 3.14159265358979f * 2.0f;
 		// Fade based on rotation phase
-		float fade = fmodf((float)i / (float)segments + t * 1.5f, 1.0f);
+		float fade = std::fmodf((float)i / (float)segments + t * 1.5f, 1.0f);
 		ImU32 c = ImGui::GetColorU32(ImGuiCol_Text, fade * 0.8f);
 		float inner = radius * 0.5f;
-		ImVec2 p1(center.x + cosf(a) * inner, center.y + sinf(a) * inner);
-		ImVec2 p2(center.x + cosf(a) * radius, center.y + sinf(a) * radius);
+		ImVec2 p1(center.x + std::cosf(a) * inner, center.y + std::sinf(a) * inner);
+		ImVec2 p2(center.x + std::cosf(a) * radius, center.y + std::sinf(a) * radius);
 		dl->AddLine(p1, p2, c, thickness);
 	}
 	ImGui::Dummy(ImVec2(size, size));
