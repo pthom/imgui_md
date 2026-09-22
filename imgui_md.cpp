@@ -599,13 +599,12 @@ void imgui_md::set_flag(unsigned flag, bool enable)
 
 void imgui_md::SPAN_LATEXMATH(bool e)
 {
-	// Default base-class behavior: just track state and accumulate text.
-	// Subclasses should override this to actually render m_latex_buffer on leave.
 	if (e) {
 		m_is_latex_inline = true;
 		m_latex_buffer.clear();
 	} else {
 		m_is_latex_inline = false;
+		render_latex_span(false);
 	}
 }
 
@@ -616,6 +615,67 @@ void imgui_md::SPAN_LATEXMATH_DISPLAY(bool e)
 		m_latex_buffer.clear();
 	} else {
 		m_is_latex_display = false;
+		render_latex_span(true);
+	}
+}
+
+bool imgui_md::get_latex_texture(const std::string&, float, ImU32, bool, latex_texture&) const
+{
+	return false;  // no LaTeX in this base class
+}
+
+// Draws m_latex_buffer: inline, aligned on the text baseline; display, centered on its own line.
+// Formulas are rasterized at the framebuffer density and displayed at the logical size (sharp on HiDPI).
+void imgui_md::render_latex_span(bool display)
+{
+	float pixel_scale = ImGui::GetIO().DisplayFramebufferScale.y;
+	if (pixel_scale <= 0.01f)
+		pixel_scale = 1.0f;
+	float logical_font_size = ImGui::GetFontSize();
+	ImU32 color = ImGui::GetColorU32(ImGuiCol_Text);
+
+	latex_texture tex;
+	if (!get_latex_texture(m_latex_buffer, logical_font_size * pixel_scale, color, display, tex)) {
+		// Fallback: the formula's source, with its delimiters
+		if (display) {
+			ImGui::NewLine();
+			std::string fallback = "$$" + m_latex_buffer + "$$";
+			ImGui::TextUnformatted(fallback.c_str());
+			ImGui::NewLine();
+		} else {
+			std::string fallback = "$" + m_latex_buffer + "$";
+			ImGui::TextUnformatted(fallback.c_str());
+			ImGui::SameLine(0.0f, 0.0f);
+		}
+		return;
+	}
+	if (tex.texture_id == ImTextureID(0))
+		return;
+
+	float logical_w = tex.size_px.x / pixel_scale;
+	float logical_h = tex.size_px.y / pixel_scale;
+	if (display) {
+		// Display math: centered on its own line
+		ImGui::NewLine();
+		float avail = ImGui::GetContentRegionAvail().x;
+		float pad_x = (avail - logical_w) * 0.5f;
+		if (pad_x > 0.0f)
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + pad_x);
+		ImGui::Image(tex.texture_id, ImVec2(logical_w, logical_h));
+		ImGui::NewLine();
+	} else {
+		// Inline math: the formula's baseline on the text baseline. ImGui::Text() draws from
+		// cursor.y with the baseline at cursor.y + ascent, so the image top goes at
+		// cursor.y + ascent - baseline.
+		float logical_baseline = tex.baseline_px / pixel_scale;
+		ImFontBaked* baked = ImGui::GetFontBaked();
+		float text_ascent = baked ? baked->Ascent : logical_font_size * 0.8f;
+		float saved_y = ImGui::GetCursorPosY();
+		ImGui::SetCursorPosY(saved_y + text_ascent - logical_baseline);
+		ImGui::Image(tex.texture_id, ImVec2(logical_w, logical_h));
+		ImGui::SameLine(0.0f, 0.0f);
+		// Restore Y so the following inline content lands on the original line
+		ImGui::SetCursorPosY(saved_y);
 	}
 }
 

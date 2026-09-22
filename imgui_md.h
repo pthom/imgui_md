@@ -45,9 +45,8 @@ struct imgui_md
 	// Enable parsing of LaTeX math spans ($...$ and $$...$$).
 	// When enabled, MD_FLAG_LATEXMATHSPANS is set on the md4c parser,
 	// and MD_TEXT_LATEXMATH content is accumulated into m_latex_buffer
-	// between SPAN_LATEXMATH enter/leave (or SPAN_LATEXMATH_DISPLAY).
-	// The actual rendering happens in SPAN_LATEXMATH / SPAN_LATEXMATH_DISPLAY,
-	// which subclasses should override (default base class does nothing on leave).
+	// between SPAN_LATEXMATH enter/leave (or SPAN_LATEXMATH_DISPLAY), then drawn on leave
+	// with the texture returned by get_latex_texture() (the source is shown when there is none).
 	void EnableLatex();
 
 	// Enable or disable a specific MD_FLAG_XXX on the md4c parser.
@@ -141,6 +140,18 @@ protected:
 	virtual image_status get_image(image_info& nfo) const;
 	// The spinner drawn while an image is loading
 	virtual void draw_loading_spinner();
+
+	// A formula as a texture, in physical pixels (see get_latex_texture)
+	struct latex_texture
+	{
+		ImTextureID texture_id = ImTextureID(0);
+		ImVec2 size_px = ImVec2(0.0f, 0.0f);
+		float baseline_px = 0.0f;   // from the top of the texture to the text baseline
+	};
+	// The formula rendered at font_size_px (physical pixels), with the display style for $$...$$.
+	// Return false when LaTeX is not available: the formula's source is shown instead.
+	// An invalid texture_id means this formula failed: nothing is drawn.
+	virtual bool get_latex_texture(const std::string& latex, float font_size_px, ImU32 color, bool display, latex_texture& out) const;
 
 	struct MdSizedFont
 	{
@@ -256,6 +267,7 @@ private:
 	int span(MD_SPANTYPE type, void* d, bool e);
 
 	void render_text(const char* str, const char* str_end);
+	void render_latex_span(bool display);
     void render_inline_code(const char* str, const char* str_end);
 	
 	void set_font(bool e);
