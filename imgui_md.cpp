@@ -178,6 +178,7 @@ void imgui_md::BLOCK_H(const MD_BLOCK_H_DETAIL* d, bool e)
 {
 	if (e) {
 		m_hlevel = d->level;
+		m_heading_text.clear();
 	} else {
 		m_hlevel = 0;
 	}
@@ -190,7 +191,12 @@ void imgui_md::BLOCK_H(const MD_BLOCK_H_DETAIL* d, bool e)
 			add_block_gap(style.blockGap);
 			ImGui::Separator();
 		}
+		heading((int)d->level, m_heading_text);
 	}
+}
+
+void imgui_md::heading(int, const std::string&)
+{
 }
 
 void imgui_md::BLOCK_DOC(bool)
@@ -679,9 +685,15 @@ void imgui_md::render_latex_span(bool display)
 	}
 }
 
-void imgui_md::SPAN_WIKILINK(const MD_SPAN_WIKILINK_DETAIL*, bool)
+void imgui_md::SPAN_WIKILINK(const MD_SPAN_WIKILINK_DETAIL* d, bool e)
 {
+	// Rendered as a link whose href is the target; the click goes to open_wikilink()
+	m_is_wikilink = e;
+	set_href(e, d->target);
+}
 
+void imgui_md::open_wikilink() const
+{
 }
 
 void imgui_md::SPAN_U(bool e)
@@ -811,8 +823,12 @@ void imgui_md::render_text(const char* str, const char* str_end)
 		}
 
 		if (!m_href.empty()) {
-			if (link_item(style, m_href.c_str()))
-				open_url();
+			if (link_item(style, m_href.c_str())) {
+				if (m_is_wikilink)
+					open_wikilink();
+				else
+					open_url();
+			}
 		}
 		if (m_is_underline) {
 			line(s.Colors[ImGuiCol_Text], true);
@@ -1188,6 +1204,21 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 		return true;
 	}
 
+	if (strncmp(str, "<center>", sz) == 0) {
+		if (!m_in_center) {
+			m_in_center = true;
+			begin_aligned_cell(MD_ALIGN_CENTER, m_center_vtx_start, m_center_width);
+		}
+		return true;
+	}
+	if (strncmp(str, "</center>", sz) == 0) {
+		if (m_in_center) {
+			m_in_center = false;
+			end_aligned_cell(MD_ALIGN_CENTER, m_center_vtx_start, m_center_width);
+		}
+		return true;
+	}
+
 	const size_t div_sz = 4;
 	if (strncmp(str, "<div", sz > div_sz ? div_sz : sz) == 0) {
 		m_div_stack.emplace_back(get_div_class(str + div_sz, str_end));
@@ -1279,6 +1310,8 @@ int imgui_md::text(MD_TEXTTYPE type, const char* str, const char* str_end)
 
 	switch (type) {
 	case MD_TEXT_NORMAL:
+		if (m_hlevel > 0)
+			m_heading_text.append(str, str_end);
 		if (m_admonition_scan_pending) {
 			m_admonition_scan_pending = false;
 			const char* marker_end = nullptr;

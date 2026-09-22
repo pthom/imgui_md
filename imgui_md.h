@@ -185,6 +185,10 @@ protected:
 
 	//url == m_href
 	virtual void open_url() const;
+	// A wikilink [[target]] or [[target|label]] was clicked (m_href == target; MD_FLAG_WIKILINKS)
+	virtual void open_wikilink() const;
+	// A heading was rendered (its text without markup)
+	virtual void heading(int level, const std::string& text);
 
 	//returns true if the term has been processed
 	virtual bool render_entity(const char* str, const char* str_end);
@@ -242,6 +246,12 @@ protected:
 	bool m_is_table_header = false;
 	bool m_is_table_body = false;
 	bool m_is_image = false;
+	bool m_is_wikilink = false;
+	std::string m_heading_text;  // accumulated while inside a heading
+	// <center> ... </center>: content centered with the aligned-cell trick
+	bool m_in_center = false;
+	int m_center_vtx_start = 0;
+	float m_center_width = 0.0f;
 	bool m_is_code = false; // true for block code and inline code
     bool m_is_code_block = false;
 	bool m_is_latex_inline = false; // LaTeX math state (populated when EnableLatex() has been called)
