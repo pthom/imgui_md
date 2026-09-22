@@ -542,9 +542,13 @@ void imgui_md::SPAN_IMG(const MD_SPAN_IMG_DETAIL* d, bool e)
 	if (e) {
 
 		image_info nfo;
-		if (get_image(nfo)) {
+		image_status status = get_image(nfo);
+		if (status == image_status::loading) {
+			draw_loading_spinner();
+		} else if (status == image_status::ready) {
 
-			const float scale = ImGui::GetStyle().FontScaleMain;
+			// Images are drawn at the same scale as the text
+			const float scale = ImGui::GetStyle().FontScaleMain * ImGui::GetStyle().FontScaleDpi;
 			nfo.size.x *= scale;
 			nfo.size.y *= scale;
 			
@@ -1086,8 +1090,11 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 
 		m_img_src = src;
 		image_info nfo;
-		if (get_image(nfo)) {
-			const float scale = ImGui::GetStyle().FontScaleMain;
+		image_status status = get_image(nfo);
+		if (status == image_status::loading) {
+			draw_loading_spinner();
+		} else if (status == image_status::ready) {
+			const float scale = ImGui::GetStyle().FontScaleMain * ImGui::GetStyle().FontScaleDpi;
 			float natural_w = nfo.size.x * scale;
 			float natural_h = nfo.size.y * scale;
 
@@ -1518,7 +1525,7 @@ ImVec4 imgui_md::get_color() const
 }
 
 
-bool imgui_md::get_image(image_info& nfo) const
+imgui_md::image_status imgui_md::get_image(image_info& nfo) const
 {
 	//Use m_href to identify images
 	
@@ -1532,8 +1539,34 @@ bool imgui_md::get_image(image_info& nfo) const
 	nfo.uv0 = { 0,0 };
 	nfo.uv1 = { 1,1 };
 
-	return true;
+	return image_status::ready;
 };
+
+// A rotating spinner, two lines high
+void imgui_md::draw_loading_spinner()
+{
+	float size = ImGui::GetFontSize() * 2.0f;
+	ImVec2 cursor = ImGui::GetCursorScreenPos();
+	ImVec2 center(cursor.x + size * 0.5f, cursor.y + size * 0.5f);
+	float radius = size * 0.4f;
+	float thickness = 2.0f;
+	float t = (float)ImGui::GetTime();
+
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	int segments = 12;
+	for (int i = 0; i < segments; i++)
+	{
+		float a = (float)i / (float)segments * 3.14159265358979f * 2.0f;
+		// Fade based on rotation phase
+		float fade = fmodf((float)i / (float)segments + t * 1.5f, 1.0f);
+		ImU32 c = ImGui::GetColorU32(ImGuiCol_Text, fade * 0.8f);
+		float inner = radius * 0.5f;
+		ImVec2 p1(center.x + cosf(a) * inner, center.y + sinf(a) * inner);
+		ImVec2 p2(center.x + cosf(a) * radius, center.y + sinf(a) * radius);
+		dl->AddLine(p1, p2, c, thickness);
+	}
+	ImGui::Dummy(ImVec2(size, size));
+}
 
 void imgui_md::open_url() const
 {

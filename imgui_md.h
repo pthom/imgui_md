@@ -135,8 +135,12 @@ protected:
 		ImVec2	uv1;
 	};
 
-	//use m_href to identify image
-	virtual bool get_image(image_info& nfo) const;
+	// none: nothing is drawn; ready: nfo is filled; loading: a spinner is drawn in place of the image
+	enum class image_status { none, ready, loading };
+	// The image at m_img_src. nfo.size is in logical pixels: the renderer applies the font scales.
+	virtual image_status get_image(image_info& nfo) const;
+	// The spinner drawn while an image is loading
+	virtual void draw_loading_spinner();
 
 	struct MdSizedFont
 	{
