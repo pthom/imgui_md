@@ -1521,8 +1521,13 @@ int imgui_md::print(const char* str, const char* str_end)
     m_in_pre = false;
     m_pre_buffer.clear();
 
+	if (style.fragmentGapTop > 0.0f)
+		ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * style.fragmentGapTop));
 	int result = md_parse(str, (MD_SIZE)(str_end - str), &m_md, this);
-	ImGui::NewLine();
+	if (style.fragmentGapBottom < 0.0f)
+		ImGui::NewLine();
+	else if (style.fragmentGapBottom > 0.0f)
+		ImGui::Dummy(ImVec2(0.0f, ImGui::GetFontSize() * style.fragmentGapBottom));
 	return result;
 }
 

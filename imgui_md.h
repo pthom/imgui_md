@@ -75,6 +75,10 @@ struct imgui_md
 		float quoteBarThickness = 2.0f;     // pixels
 		float admonitionBarThickness = 3.0f;
 		bool linkTooltip = true;            // show the url when hovering a link
+		// Space above and below each rendered fragment (a print() call), in em: fragments stack
+		// with widgets between them. Bottom: negative = automatic (one ImGui::NewLine()).
+		float fragmentGapTop = 0.0f;
+		float fragmentGapBottom = -1.0f;
 	};
 	Style style;
 
