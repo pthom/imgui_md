@@ -62,6 +62,7 @@ struct imgui_md
 		ImVec4 linkUnderline = ImVec4(0, 0, 0, -1);        // automatic: ImGuiCol_Button
 		ImVec4 linkUnderlineHovered = ImVec4(0, 0, 0, -1); // automatic: ImGuiCol_ButtonHovered
 		ImVec4 codeColor = ImVec4(0, 0, 0, -1);            // automatic: the text color, a little more blue
+		ImVec4 latexErrorColor = ImVec4(0, 0, 0, -1);      // automatic: the Caution admonition color (source of an invalid formula)
 		ImVec4 quoteBar = ImVec4(0, 0, 0, -1);             // automatic: ImGuiCol_TextDisabled
 		ImVec4 kbdBorder = ImVec4(0, 0, 0, -1);            // automatic: ImGuiCol_Border
 		ImVec4 markBackground = ImVec4(245.f / 255.f, 205.f / 255.f, 60.f / 255.f, 120.f / 255.f);
@@ -151,9 +152,11 @@ protected:
 		ImTextureID texture_id = ImTextureID(0);
 		ImVec2 size_px = ImVec2(0.0f, 0.0f);
 		float baseline_px = 0.0f;   // from the top of the texture to the text baseline
+		std::string error;          // set when the formula is invalid: the source is shown with this message as a tooltip
 	};
 	// The formula rendered at font_size_px (physical pixels), with the display style for $$...$$.
-	// Return false when LaTeX is not available: the formula's source is shown instead.
+	// Return false when LaTeX is not available, or when the formula is invalid (then fill out.error):
+	// the formula's source is shown instead.
 	// An invalid texture_id means this formula failed: nothing is drawn.
 	virtual bool get_latex_texture(const std::string& latex, float font_size_px, ImU32 color, bool display, latex_texture& out) const;
 

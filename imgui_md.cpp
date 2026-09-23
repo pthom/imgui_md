@@ -643,17 +643,28 @@ void imgui_md::render_latex_span(bool display)
 
 	latex_texture tex;
 	if (!get_latex_texture(m_latex_buffer, logical_font_size * pixel_scale, color, display, tex)) {
-		// Fallback: the formula's source, with its delimiters
+		// Fallback: the formula's source, with its delimiters (in the error color, with the message
+		// as a tooltip, when the formula is invalid)
+		bool invalid = !tex.error.empty();
+		if (invalid)
+			ImGui::PushStyleColor(ImGuiCol_Text, resolve_color(style.latexErrorColor, admonition_color(AdmonitionKind::Caution)));
 		if (display) {
 			ImGui::NewLine();
 			std::string fallback = "$$" + m_latex_buffer + "$$";
 			ImGui::TextUnformatted(fallback.c_str());
-			ImGui::NewLine();
 		} else {
 			std::string fallback = "$" + m_latex_buffer + "$";
 			ImGui::TextUnformatted(fallback.c_str());
-			ImGui::SameLine(0.0f, 0.0f);
 		}
+		if (invalid) {
+			ImGui::PopStyleColor();
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("%s", tex.error.c_str());
+		}
+		if (display)
+			ImGui::NewLine();
+		else
+			ImGui::SameLine(0.0f, 0.0f);
 		return;
 	}
 	if (tex.texture_id == ImTextureID(0))
