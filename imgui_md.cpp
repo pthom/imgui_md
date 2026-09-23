@@ -1119,6 +1119,7 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 		for (bool open : m_details_open_stack)
 			if (!open) { any_ancestor_closed = true; break; }
 		if (any_ancestor_closed) {
+			m_details_id_counter++;  // consume the id anyway: the ids of the following headers must not depend on what is open
 			m_details_open_stack.push_back(false);
 			m_details_awaiting_summary = false;
 			m_details_awaiting_open_default = false;
