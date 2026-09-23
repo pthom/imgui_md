@@ -647,7 +647,7 @@ void imgui_md::render_latex_span(bool display)
 		// as a tooltip, when the formula is invalid)
 		bool invalid = !tex.error.empty();
 		if (invalid)
-			ImGui::PushStyleColor(ImGuiCol_Text, resolve_color(style.latexErrorColor, admonition_color(AdmonitionKind::Caution)));
+			ImGui::PushStyleColor(ImGuiCol_Text, resolve_color(style.errorColor, admonition_color(AdmonitionKind::Caution)));
 		if (display) {
 			ImGui::NewLine();
 			std::string fallback = "$$" + m_latex_buffer + "$$";
@@ -802,7 +802,14 @@ void imgui_md::render_text(const char* str, const char* str_end)
 			dl->ChannelsSetCurrent(1);
 		}
 
+		if (m_is_error)
+			ImGui::PushStyleColor(ImGuiCol_Text, resolve_color(style.errorColor, admonition_color(AdmonitionKind::Caution)));
 		ImGui::TextUnformatted(str, te);
+		if (m_is_error) {
+			ImGui::PopStyleColor();
+			if (!m_error_title.empty() && ImGui::IsItemHovered())
+				ImGui::SetTooltip("%s", m_error_title.c_str());
+		}
 
 		if (mark_split) {
 			dl->ChannelsSetCurrent(0);
@@ -999,6 +1006,19 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 	if (strncmp(str, "</kbd>",  sz) == 0) { m_is_kbd  = false; return true; }
 	if (strncmp(str, "<mark>",  sz) == 0) { m_is_mark = true;  return true; }
 	if (strncmp(str, "</mark>", sz) == 0) { m_is_mark = false; return true; }
+	// <md-error title="reason">: text in the error color, the reason as a tooltip (failed @import)
+	if (sz > 9 && strncmp(str, "<md-error", 9) == 0) {
+		m_is_error = true;
+		m_error_title.clear();
+		const char* t = strstr(str, "title=\"");
+		if (t && t < str_end) {
+			t += 7;
+			const char* e = (const char*)memchr(t, '"', str_end - t);
+			if (e) m_error_title.assign(t, e);
+		}
+		return true;
+	}
+	if (strncmp(str, "</md-error>", sz) == 0) { m_is_error = false; return true; }
 
 	// <details> / </details>: open a CollapsingHeader whose label comes
 	// from the inner <summary>...</summary> line. When collapsed, all

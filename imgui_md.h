@@ -62,7 +62,7 @@ struct imgui_md
 		ImVec4 linkUnderline = ImVec4(0, 0, 0, -1);        // automatic: ImGuiCol_Button
 		ImVec4 linkUnderlineHovered = ImVec4(0, 0, 0, -1); // automatic: ImGuiCol_ButtonHovered
 		ImVec4 codeColor = ImVec4(0, 0, 0, -1);            // automatic: the text color, a little more blue
-		ImVec4 latexErrorColor = ImVec4(0, 0, 0, -1);      // automatic: the Caution admonition color (source of an invalid formula)
+		ImVec4 errorColor = ImVec4(0, 0, 0, -1);           // automatic: the Caution admonition color (invalid formula, failed import: <md-error>)
 		ImVec4 quoteBar = ImVec4(0, 0, 0, -1);             // automatic: ImGuiCol_TextDisabled
 		ImVec4 kbdBorder = ImVec4(0, 0, 0, -1);            // automatic: ImGuiCol_Border
 		ImVec4 markBackground = ImVec4(245.f / 255.f, 205.f / 255.f, 60.f / 255.f, 120.f / 255.f);
@@ -222,6 +222,8 @@ protected:
 	bool m_is_sub = false;
 	bool m_is_sup = false;
 	bool m_is_kbd = false;
+	bool m_is_error = false;         // inside <md-error title="reason">: error color, the reason as a tooltip
+	std::string m_error_title;
 	bool m_is_mark = false;
 
 	// <details>/<summary> state. One bool per currently-open <details>
