@@ -566,7 +566,7 @@ void imgui_md::SPAN_IMG(const MD_SPAN_IMG_DETAIL* d, bool e)
 				nfo.size.y = csz.x * r;
 			}
 
-			ImGui::Image(nfo.texture_id, nfo.size, nfo.uv0, nfo.uv1);
+			ImGui::Image(nfo.texture, nfo.size, nfo.uv0, nfo.uv1);
 			// Stay on the same line so consecutive inline images or text continue horizontally
 			ImGui::SameLine(0, 0);
 
@@ -667,7 +667,7 @@ void imgui_md::render_latex_span(bool display)
 			ImGui::SameLine(0.0f, 0.0f);
 		return;
 	}
-	if (tex.texture_id == ImTextureID(0))
+	if (tex.texture._TexData == nullptr && tex.texture._TexID == ImTextureID_Invalid)
 		return;
 
 	float logical_w = tex.size_px.x / pixel_scale;
@@ -679,7 +679,7 @@ void imgui_md::render_latex_span(bool display)
 		float pad_x = (avail - logical_w) * 0.5f;
 		if (pad_x > 0.0f)
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + pad_x);
-		ImGui::Image(tex.texture_id, ImVec2(logical_w, logical_h));
+		ImGui::Image(tex.texture, ImVec2(logical_w, logical_h));
 		ImGui::NewLine();
 	} else {
 		// Inline math: the formula's baseline on the text baseline. ImGui::Text() draws from
@@ -690,7 +690,7 @@ void imgui_md::render_latex_span(bool display)
 		float text_ascent = baked ? baked->Ascent : logical_font_size * 0.8f;
 		float saved_y = ImGui::GetCursorPosY();
 		ImGui::SetCursorPosY(saved_y + text_ascent - logical_baseline);
-		ImGui::Image(tex.texture_id, ImVec2(logical_w, logical_h));
+		ImGui::Image(tex.texture, ImVec2(logical_w, logical_h));
 		ImGui::SameLine(0.0f, 0.0f);
 		// Restore Y so the following inline content lands on the original line
 		ImGui::SetCursorPosY(saved_y);
@@ -1232,7 +1232,7 @@ bool imgui_md::check_html(const char* str, const char* str_end)
 				nfo.size.y = csz.x * r;
 			}
 
-			ImGui::Image(nfo.texture_id, nfo.size, nfo.uv0, nfo.uv1);
+			ImGui::Image(nfo.texture, nfo.size, nfo.uv0, nfo.uv1);
 			// Stay on the same line so consecutive inline images or text continue horizontally
 			ImGui::SameLine(0, 0);
 		}
@@ -1668,11 +1668,7 @@ imgui_md::image_status imgui_md::get_image(image_info& nfo) const
 	//Use m_href to identify images
 	
 	//Example - Imgui font texture
-#ifdef IMGUI_HAS_TEXTURES
-	nfo.texture_id = ImGui::GetIO().Fonts->TexRef.GetTexID();
-#else
-	nfo.texture_id = ImGui::GetIO().Fonts->TexID;
-#endif
+	nfo.texture = ImGui::GetIO().Fonts->TexRef;
 	nfo.size = { 100,50 };
 	nfo.uv0 = { 0,0 };
 	nfo.uv1 = { 1,1 };

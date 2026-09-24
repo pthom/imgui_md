@@ -133,7 +133,7 @@ protected:
 
 	struct image_info
 	{
-		ImTextureID	texture_id;
+		ImTextureRef texture;   // a backend id, or an ImTextureData created by the backend at render time
 		ImVec2	size;
 		ImVec2	uv0;
 		ImVec2	uv1;
@@ -149,7 +149,7 @@ protected:
 	// A formula as a texture, in physical pixels (see get_latex_texture)
 	struct latex_texture
 	{
-		ImTextureID texture_id = ImTextureID(0);
+		ImTextureRef texture;       // invalid (no data, no id): this formula failed, nothing is drawn
 		ImVec2 size_px = ImVec2(0.0f, 0.0f);
 		float baseline_px = 0.0f;   // from the top of the texture to the text baseline
 		std::string error;          // set when the formula is invalid: the source is shown with this message as a tooltip
@@ -157,7 +157,6 @@ protected:
 	// The formula rendered at font_size_px (physical pixels), with the display style for $$...$$.
 	// Return false when LaTeX is not available, or when the formula is invalid (then fill out.error):
 	// the formula's source is shown instead.
-	// An invalid texture_id means this formula failed: nothing is drawn.
 	virtual bool get_latex_texture(const std::string& latex, float font_size_px, ImU32 color, bool display, latex_texture& out) const;
 
 	struct MdSizedFont
